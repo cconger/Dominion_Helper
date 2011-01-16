@@ -1,0 +1,26 @@
+{
+  "name" : "Dominion Score Keeper",
+  "version" : "0.2.0",
+  "description" : "Keeps track of the VP score of all players on dominion.isotropic.org",
+  "background_page" : "background.html",
+  "browser_action" : {
+    "default_icon" : "Icons/Dominion-48.png",
+    "popup" : "popup.html"
+  },
+  "update_url" : "http://www.channingconger.com/dominion/update.xml",
+  "content_scripts" : [
+    {
+      "matches" : [
+        "http://dominion.isotropic.org/play*"
+      ],
+      "js" : [
+        "scripts/jquery-1.4.4.min.js",
+        "scripts/content-trigger.js"
+      ],
+      "run_at" : "document_idle",
+      "all_frames" : false
+    }
+  ],
+  "icons" : { "48" : "Icons/Dominion-48.png",
+             "128" : "Icons/Dominion-128.png"}         
+}

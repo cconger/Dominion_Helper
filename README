@@ -1,0 +1,7 @@
+Simple Dominion Helper.
+
+Parses the log data on dominion.isotropic.org as you play
+to show the current VP scores of all players.
+
+
+Currently in a very unstable state.

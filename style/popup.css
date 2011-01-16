@@ -1,0 +1,23 @@
+body{
+  width: 300px;
+}
+
+.template {
+  display: none;
+}
+
+#players {
+  font-size: 2em;
+  font-weight: bold;
+}
+
+#players div {
+  font-size: .5em;
+  font-weight: normal;
+}
+
+.player_name {
+}
+
+.score {
+}

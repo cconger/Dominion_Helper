@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="/style/popup.css" />
+    <script src="scripts/jquery-1.4.4.min.js"></script>
+    <script>
+      var game_handler = function (response) {
+        var j = 0;
+        for (i in response) {
+          var template = $('div.template').clone();
+          template.removeClass('template');
+          template.children().first().text(i);
+          template.children().last().text(response[i]);
+          template.appendTo('#players');
+          j++;
+        }
+        if(j == 0)
+        {
+          $('#players').text("No game found");
+        }
+      };
+      $(document).ready(function(){
+        chrome.extension.sendRequest({'command' : 'get_game_state'}, game_handler);
+      });
+    </script>
+  </head>
+  <body>
+    <div id="players">Player List</div>
+    <div class="template"><span class="player_name">PlayerName</span>:<span class="score">Score</span></div>
+  </body>
+</html>
+    

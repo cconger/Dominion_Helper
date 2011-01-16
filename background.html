@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script>
+
+    var plural_forms = {
+      "Duchies" : "Duchy",
+      "Smugglers" : "Smugglers",
+      "Nobles"  : "Nobles",
+      "Witches" : "Witch",
+      "Laboratories" : "Laboratory",
+      "Libraries" : "Library",
+      "Spies" : "Spy",
+      "Treasuries": "Treasury",
+      "Apothecaries" : "Apothecary",
+      "Universities" : "University",
+      "Quarries" : "Quarry",
+      "Cities" : "City",
+      "Goons" : "Goons",
+      "Colonies": "Colony",
+      "Stashes" : "Stash"
+    }
+    
+    function depluralize(card) {
+      var result = card;
+      if(card.substring(card.length-1, card.length) == "s") {
+        result = plural_forms[card] || card.substring(0,card.length -1);
+      }
+      return result;
+    }
+    
+
+    //Map of card names to victory point value.
+    var victoryCards = {
+      "Estate"     : 1,
+      "Duchy"      : 3,
+      "Province"   : 6,
+      "Colony"     : 10,
+      "Curse"      : -1,
+      "Harem"      : 2,
+      "Great Hall" : 1,
+      "Nobles"     : 2,
+      "Island"     : 2
+    };
+
+    //Map of card names to functions to yield their current victory point value
+    var complexVictoryCards = {
+      // Vineyard => +1 for every 3 actions in deck
+      "Vineyard" : function(deck) { return Math.floor(deck.actionCount() / 3); },
+      // Duke     => +1 for every duchy in deck.
+      "Duke" : function(deck) { return deck.cardCount("Duchy"); },
+      // Gardens  => +1 for every 10 cards in deck.
+      "Gardens" : function(deck) { return Math.floor(deck.size() / 10); }
+    }
+
+    //Map of card names to coin value.
+    var treasureCards = {
+      "Copper"     : 1,
+      "Silver"     : 2,
+      "Gold"       : 3,
+      "Platinum"   : 5,
+      "Harem"      : 2,
+      "Loan"       : 1,
+      "Quarry"     : 1,
+      "Talisman"   : 1,
+      "Contraband" : 3,
+      "Royal Seal" : 2,
+      "Venture"    : 5,
+      "Hoard"      : 2,
+      "Stash"      : 2
+    };
+
+    //Map of card names to functions to yield their current coin value.
+    var complexTreasureCards = {
+      // Philosopher's Stone => +1 coin per 5 cards in deck (+ discard)
+      "Philosopher's Stone" : function(deck){ return Math.floor(deck / 5); },
+      // Bank                => +1 coin per Treasure Card in Play (+ this one)
+      "Bank" : function(deck) { return 1; } // FIX ME.
+    };
+
+    function Game(){
+      this.decks = {};
+      this.reset_game = function(command) {
+        this.decks = {"You" : new Deck("You")};
+      }
+      
+      this.handler = function(command, sender, sendResponse) {
+        results = {};
+        //console.log(command);
+        if(command["player"]) {
+          // This is a player command.
+          var deck = this.decks[command["player"]];
+          if(!deck) { deck = this.decks["You"]; }
+          results = deck[command["command"]](command) || {};
+        } else {
+          results = this[command["command"]](command);
+        }
+        sendResponse(results);
+      };
+      
+      this.add_players = function(command) {
+        for(p in command["players"]) {
+          playerName = command["players"][p];
+          if(!this.decks[playerName]){
+            this.decks[playerName] = new Deck(playerName);
+          }
+          //console.log("Adding Player: ", playerName)
+        }
+      };
+      
+      this.get_game_state = function() {
+        results = {};
+        for(deck in this.decks) {
+          results[deck] = this.decks[deck].victory_points();
+        }
+        return results;
+      }
+      
+      this.game_end = function() {
+        console.warn("game_end: Not yet implemented.");
+      }
+      
+      //For use with context switches...
+      this.target_deck = this.decks["You"];
+      
+      this.reset_game();
+    }
+
+    function Deck(player){
+      this.player_name = player;
+      this.cards = {"Estate" : 3,
+                    "Copper" : 7};
+      
+      this.victory_tokens = 0;
+      
+      this.cardCount = function(cardName) {
+        return this.cards[cardName] || 0;
+      }
+      
+      // Returns the number of cards in the deck.
+      this.size = function() {
+        result = 0;
+        for (i in this.cards) {
+          result += this.cards[i];
+        }
+        return result;
+      }
+
+      // Returns the sum of all cards that impact victory points.
+      this.victory_points = function() {
+        result = 0;
+        for(i in this.cards) {
+          if(complexVictoryCards[i]) {
+            result += complexVictoryCards[i](this) * this.cards[i];
+          } else {
+            result += (victoryCards[i] || 0) * this.cards[i];
+          }
+        }
+        return result + this.victory_tokens;
+      };
+
+      // Returns the sum of all treasure cards.
+      this.fortune = function() {
+        result = 0;
+        for(i in this.cards){
+          result += (treasureCards[i] || 0) * this.cards[i];
+        }
+        return result;
+      };
+      
+      this.gain_card = function(args) {
+        card = depluralize(args["card"]);
+        quantity = args["quantity"] * 1;
+        if(!this.cards[card]) { this.cards[card] = 0; }
+        this.cards[card] += quantity;
+        //console.log(this.player_name, "Gained Card:", card, " x" + quantity );
+      };
+      
+      this.lose_card = function(args) {
+        card = depluralize(args["card"]);
+        quantity = args["quantity"] * 1;
+        this.cards[card] -= quantity;
+        //console.log(this.player_name, "Lost Card:", card, " x" + quantity );
+      };
+      
+      this.gain_vp = function(args) {
+        quantity = args["quantity"] * 1;
+        this.victory_tokens += quantity;
+        //console.log(this.player_name, "Gains VP: ", quantity);
+      };
+    }
+    
+    var games = {}
+    chrome.extension.onRequest.addListener(function(request, sender, sendResponse){
+      id = 1; //sender['tab']['id']; //ONLY SUPPORTING ONE GAME AT THE MOMENT
+      if(! games[id]) { games[id] = new Game(); }
+      games[id].handler(request, sender, sendResponse);
+    });
+    </script>
+  </head>
+</html>
